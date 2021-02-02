@@ -2,7 +2,7 @@ using System;
 using System.ComponentModel.DataAnnotations;
 using Microsoft.EntityFrameworkCore;
 
-namespace Desafio.Umbler.Models
+namespace Desafio.Umbler.Repository
 {
     public class DatabaseContext : DbContext
     {

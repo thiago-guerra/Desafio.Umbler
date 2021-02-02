@@ -2,84 +2,51 @@
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
-using Desafio.Umbler.Models;
 using Whois.NET;
 using Microsoft.EntityFrameworkCore;
 using DnsClient;
 using Microsoft.AspNetCore.Http;
 using System.Text.RegularExpressions;
+using Desafio.Umbler.Models;
+using Desafio.Umbler.Repository;
+using Desafio.Umbler.Services;
 
 namespace Desafio.Umbler.Controllers
 {
     [Route("api")]
     public class DomainController : Controller
     {
-        private readonly DatabaseContext _db;
-
-        public DomainController(DatabaseContext db)
+        private readonly IDomainRepository _domainRepository;
+        public DomainController(IDomainRepository domainRepository)
         {
-            _db = db;
+            _domainRepository = domainRepository;
         }
 
         [HttpGet, Route("domain/{domainName}")]
         public async Task<IActionResult> Get(string domainName)
         {
-            DomainModel domainModel = new DomainModel();
+            Models.DomainModel domainModel = new Models.DomainModel();
             try
             {
 
-                if (!string.IsNullOrEmpty(domainName) && ValidaDominio(domainName))
+                if (!string.IsNullOrEmpty(domainName) && IsValidDominio(domainName))
                 {
 
-                    Domain domain = await _db.Domains.FirstOrDefaultAsync(d => d.Name == domainName);
+                    Domain domainDb = await _domainRepository.GetDomainForName(domainName);
 
-                    if (domain == null)
+                    if (domainDb == null)
                     {
-                        var response = await WhoisClient.QueryAsync(domainName);
-
-                        var lookup = new LookupClient();
-                        var result = await lookup.QueryAsync(domainName, QueryType.ANY);
-                        var record = result.Answers.ARecords().FirstOrDefault();
-                        var address = record?.Address;
-                        var ip = address?.ToString();
-
-                        var hostResponse = await WhoisClient.QueryAsync(ip);
-
-                        domain = new Domain
-                        {
-                            Name = domainName,
-                            Ip = ip,
-                            UpdatedAt = DateTime.Now,
-                            WhoIs = response.Raw,
-                            Ttl = record?.TimeToLive ?? 0,
-                            HostedAt = hostResponse.OrganizationName
-                        };
-
-                        _db.Domains.Add(domain);
+                        domainDb = await WhoisNetService.GetDomain(domainName);
+                        await _domainRepository.IncludeDomain(domainDb);
                     }
 
-                    if (DateTime.Now.Subtract(domain.UpdatedAt).TotalMinutes > domain.Ttl)
+                    if (DateTime.Now.Subtract(domainDb.UpdatedAt).TotalMinutes > domainDb.Ttl)
                     {
-                        var response = await WhoisClient.QueryAsync(domainName);
-                        var lookup = new LookupClient();
-                        var result = await lookup.QueryAsync(domainName, QueryType.ANY);
-                        var record = result.Answers.ARecords().FirstOrDefault();
-                        var address = record?.Address;
-                        var ip = address?.ToString();
-
-                        var hostResponse = await WhoisClient.QueryAsync(ip);
-
-                        domain.Name = domainName;
-                        domain.Ip = ip;
-                        domain.UpdatedAt = DateTime.Now;
-                        domain.WhoIs = response.Raw;
-                        domain.Ttl = record?.TimeToLive ?? 0;
-                        domain.HostedAt = hostResponse.OrganizationName;
+                        var doamainNet = await WhoisNetService.GetDomain(domainName);
+                        await _domainRepository.UpdateDoamin(domainDb, doamainNet);
                     }
 
-                    await _db.SaveChangesAsync();
-
-                    domainModel = ConverterDomainEfToModel(domain);
+                    domainModel = ConvertDomainEfToModel(domainDb);
                     return Ok(domainModel);
                 }
                 else
@@ -93,7 +60,7 @@ namespace Desafio.Umbler.Controllers
             }
         }
 
-        private DomainModel ConverterDomainEfToModel(Domain pDomainEf)
+        private DomainModel ConvertDomainEfToModel(Domain pDomainEf)
         {
             DomainModel domainModel = new DomainModel()
             {
@@ -106,7 +73,7 @@ namespace Desafio.Umbler.Controllers
             return domainModel;
         }
 
-        private bool ValidaDominio(string pDominio)
+        private bool IsValidDominio(string pDominio)
         {
             return Regex.IsMatch(pDominio, @"^((?!-))(xn--)?[a-z0-9][a-z0-9-_]{0,61}[a-z0-9]{0,1}\.(xn--)?([a-z0-9\-]{1,61}|[a-z0-9-]{1,30}\.[a-z]{2,})$");
         }

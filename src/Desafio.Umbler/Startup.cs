@@ -1,4 +1,4 @@
-﻿using Desafio.Umbler.Models;
+﻿using Desafio.Umbler.Repository;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
@@ -23,6 +23,8 @@ namespace Desafio.Umbler
             // Add framework services.
             services.AddDbContext<DatabaseContext>(options =>
                 options.UseMySql(Configuration.GetConnectionString("DefaultConnection")));
+
+            services.AddScoped<IDomainRepository, DomainRepository>();
 
             services.AddMvc();
         }
