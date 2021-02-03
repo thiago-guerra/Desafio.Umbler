@@ -1,10 +1,12 @@
 ﻿using Desafio.Umbler.Repository;
+using DnsClient;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Whois.NET;
 
 namespace Desafio.Umbler
 {
@@ -20,11 +22,11 @@ namespace Desafio.Umbler
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            // Add framework services.
+            //// Add framework services.
             services.AddDbContext<DatabaseContext>(options =>
                 options.UseMySql(Configuration.GetConnectionString("DefaultConnection")));
-
-            services.AddScoped<IDomainRepository, DomainRepository>();
+            services.AddControllers();
+            services.AddScoped<ILookupClient, LookupClient>();
 
             services.AddMvc();
         }

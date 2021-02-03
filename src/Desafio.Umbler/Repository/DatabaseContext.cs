@@ -11,7 +11,7 @@ namespace Desafio.Umbler.Repository
         {
 
         }
-
+       
         public DbSet<Domain> Domains { get; set; }
     }
 
