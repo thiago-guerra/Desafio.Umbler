@@ -1,6 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Web">
   <PropertyGroup>
     <TargetFramework>netcoreapp3.1</TargetFramework>
+    <UserSecretsId>dc30a1be-5de1-4f91-9a5d-a39fbe8a0ebf</UserSecretsId>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="DnsClient" Version="1.0.7" />
